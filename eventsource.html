@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+
+        <title>Standardized real-time events with EventSource</title>
+
+        <meta name="description" content="Explains a new way for real-time server updates: SSE aka EventSource">
+        <meta name="author" content="Burak Yigit Kaya">
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <link rel="stylesheet" href="css/reveal.min.css">
+        <link rel="stylesheet" href="css/theme/disqus.css" id="theme">
+        <link rel="stylesheet" type="text/css" href="fonts.css">
+
+        <!-- For syntax highlighting -->
+        <link rel="stylesheet" href="lib/css/zenburn.css">
+
+        <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+        <script>
+            document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+        </script>
+
+        <!--[if lt IE 9]>
+        <script src="lib/js/html5shiv.js"></script>
+        <![endif]-->
+    </head>
+
+    <body>
+
+        <div class="reveal">
+
+            <!-- Any section element inside of this container is displayed as a slide -->
+            <div class="slides">
+
+                <section>
+                    <h1>EventSource</h1>
+                    <h3>Standardized real-time events</h3>
+                    <p>
+                        <small><a href="http://read.byk.im">Burak Yigit Kaya</a> / <a href="http://twitter.com/madBYK">@madBYK</a></small>
+                    </p>
+                </section>
+
+                <section>
+                    <img src="eventsource/disqus-tri.png">
+                    <h2>if this is interesting to you</h2>
+                    <p><small>
+                    we're hiring! - <a href="http://disqus.com/jobs">disqus.com/jobs</a>
+                    </small></p>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>What is DISQUS?</h2>
+                    </section>
+                    <section>
+                        <iframe data-src="http://disqus.com" data-fallback="eventsource/whats-disqus.png"></iframe>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Why Realtime?</h2>
+                        <ul>
+                            <li class="fragment">Capture and deliver the moment</li>
+                            <li class="fragment">Increase engagement</li>
+                            <li class="fragment">Looks cool &#x1F60E;</li>
+                            <li class="fragment">Paves way for new products</li>
+                        </ul>
+                    </section>
+                    <section>
+                        <iframe data-src="http://map.labs.disqus.com" data-fallback="eventsource/orbital.png"></iframe>
+                        <a href="http://map.labs.disqus.com">map.labs.disqus.com</a>
+                    </section>
+                </section>
+
+                <section>
+                    <h2>How did it start?</h2>
+                    <pre><code>
+var interval = setInterval(function () {
+    var cache = DISQUS.cache.realtime,
+        url   = DISQUS.jsonData.urls.realtime;
+
+    url += '?timestamp=' + cache.last_checked +
+        '&amp;thread_id=' + DISQUS.jsonData.thread.id +
+        '&amp;f=' + DISQUS.jsonData.forum.url + '&amp;';
+
+    if (!cache.ongoing_request &amp;&amp; DISQUS.jsonData.realtime_enabled) {
+        if (cache.prev_script &amp;&amp; cache.prev_script.parentNode) {
+            DISQUS.nodes.remove(cache.prev_script);
+        }
+
+        cache.ongoing_request = true;
+        cache.prev_script = DISQUS.request.get(url, undefined, true);
+    }
+}, DISQUS.jsonData.context.realtime_speed);
+                    </code></pre>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>If ain' broken, don't fix it?</h2>
+                        <p class="fragment">So why did we "fix" it?</p>
+                        <p class="fragment">Coz it was broken.</p>
+                    </section>
+                    <section data-state="alert">
+                        <h2>What was broken?</h2>
+                        <ul>
+                            <li class="fragment">Not scalable<span class="fragment">, although based on memcache</span></li>
+                            <li class="fragment">Not really realtime due to limitations on frequency</li>
+                            <li class="fragment">Running script directly, hard to play with</li>
+                        </ul>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h1>What's next then?</h1>
+                    </section>
+                    <section>
+                            <h3>Node.JS + Socket.IO!</h3>
+                            <small><em>with Flash</em></small>
+                    </section>
+                    <section data-state="soothe">
+                        <img src="eventsource/trollface.gif">
+                    </section>
+                    <section>
+                        <h2>Nginx PushStream<br>+<br>Streaming XHR</h2>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Streaming XHR?</h2>
+                        <pre><code>
+var interval = setInterval(function () {
+    // Do nothing if the server didn't push anything new.
+    if (xhr.responseText &amp;&amp; len !== xhr.responseText.length) {
+        /* ...try parsing responseText... */
+        
+        /* ...trigger events etc... */
+        
+        len = xhr.responseText.length;
+    }
+
+    if (xhr.readyState == 4) {  // detect close
+        xhr.abort();
+        clearInterval(interval);
+        return void self.poll();
+    }
+}, frequency);
+                        </code></pre>
+                    </section>
+                    <section data-state="blackout">
+                        <h2>Still using timers / periodic checks :(</h2>
+                    </section>
+                </section>
+
+                <section>
+                    <section data-state="soothe">
+                        <h2>Better streaming XHR!</h2>
+                        <p><em>brought to you by HTML5 and XHR2</em></p>
+                        <img src="eventsource/html5_present.jpg">
+                    </section>
+                    
+                    <section>
+                        <h2>Using onProgress</h2>
+                        <pre><code>
+onProgress: function () {
+    var resp = this.xhr.responseText;
+    var advance = 0;
+    var rows;
+
+    // Sanity check
+    if (!resp || this.marker >= resp.length)
+        return;
+
+    /* ...try parsing responseText... */
+    
+    /* ...trigger events etc... */
+    }
+
+    if (advance > 0)
+        this.marker += (advance - 1);  // -1 since no new line at the end
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section data-state="blackout">
+                        <h2>Still not good enough</h2>
+                        <ul>
+                            <li class="fragment">Parsing line-by-line is hard</li>
+                            <li class="fragment">Infinite spinner issues</li>
+                            <li class="fragment">Needs periodic reconnects due to memory issues</li>
+                        </ul>
+                    </section>
+                </section>
+                
+                <section>
+                    <section>
+                        <h2>WebSocket:<br>An Elegant Weapon</h2>
+                        <img src="eventsource/websocket_an_elegant_weapon.png">
+                    </section>
+
+                    <section>
+                        <h2>Initial WebSocket Code</h2>
+                        <pre><code>
+run: function () {
+    var socket = this.socket = new WebSocket(this.url);
+
+    socket.onmessage = this.onmessage.bind(this);
+    socket.onclose = this.close.bind(close);
+},
+
+onmessage: function (evt) {
+    var msg = JSON.parse(evt.data);
+    this.handleMessage(msg);
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Detecting browser support</h2>
+                        <pre><code>!!window.WebSocket</code></pre>
+                        <div class="fragment">
+                            <h3>Only if everything was perfect...</h3>
+                            <pre><code>
+// Hi, I'm Safari 5.1, the smartest browser in the world who implemented
+// an old WebSocket draft without a vendor prefix, just for fun!
+window.WebSocket &amp;&amp; WebSocket.CLOSING === 2,
+                            </code></pre>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2>What if connection drops?</h2>
+                        <pre><code>
+onClose: function (evt) {
+    if (!evt.wasClean)
+        return;  // means error, which is handled by onError
+
+    DISQUS.log('RT: [Socket] Connection closed. Restarting...');
+    this.trigger('close', this);
+    this.run();
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>What if connection drops due to server error?</h2>
+                        <pre><code>
+onError: function () {
+    this.trigger('error');
+
+    if (this.interval &lt;= BACKOFF_LIMIT)
+        this.interval *= EXP_BASE;
+
+    DISQUS.logError('RT: Connection error, backing off...');
+    _.delay(this._boundRun, this.interval * 1000);
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Detecting handshake failure</h2>
+                        <pre><code>
+initialize: function (threadId, handlers, context) {
+    /* ... */
+    if (ws) {  // if browser supports WebSockets
+        pipe.on('fail', function () {
+            this._wsSupported = false;
+            // remove all event listeners from the old pipe
+            pipe.off();
+            this.initialize.apply(this, this._initArgs);
+        }, this);
+    }
+
+    pipe.run();
+}
+                        </code></pre>
+                        <p class="fragment"><em>Bleh...</em></p>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Status Check</h2>
+                    </section>
+                    
+                    <section>
+                        <h2>Problems Solved</h2>
+                        <ul>
+                            <li class="fragment">Infinite spinners</li>
+                            <li class="fragment">Manual stream parsing</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2>Problems Standing</h2>
+                        <ul>
+                            <li class="fragment">Manual connection control</li>
+                            <li class="fragment">Manual event distribution</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2>Problems <em>Added</em></h2>
+                        <ul>
+                            <li class="fragment">Detecting browser support</li>
+                            <li class="fragment">Detecting network support</li>
+                            <li class="fragment">Implementing WebSockets backend</li>
+                        </ul>
+                    </section>
+                    
+                    <section data-state="alert">
+                        <h2>Revenge of the Socket</h2>
+                        <img src="eventsource/darthsocket.jpg">
+                    </section>
+                    
+                    <section data-state="blackout">
+                        <h2>We need a hero...</h2>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>EventSource:<br>A New Hope</h2>
+                        <q>Those were not the droids you are looking for.<br>But this one is.</q>
+                    </section>
+                    
+                    <section>
+                        <h2>What do we have here?</h2>
+                        <ul>
+                            <li class="fragment">An event system, based on a simple data structure</li>
+                            <li class="fragment">Semi-automatic connection control</li>
+                            <li class="fragment">Good old HTTP with just a new MIME type</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Sample Data</h2>
+                        <pre><code>
+<strong>id:</strong> 0ab2a49455664f0c9bca9a057b35af8a
+<strong>event:</strong> Vote
+<strong>data:</strong> { /* Some JSON data in a single line */ }
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>How to use?</h2>
+                        <pre><code>
+var handleGeoEvent = function(e) {
+    var data = JSON.parse(e.data);
+    var geo = data.message_body.geo;
+
+    if (geo) { // geo might be undefined
+      addGeoPoint(geo.latitude, geo.longitude);
+    }
+};
+
+var ev = new EventSource("http://realtime.services.disqus.com/api/raw/orbital");
+ev.addEventListener("Post", handleGeoEvent);
+ev.addEventListener("Vote", handleGeoEvent);
+ev.addEventListener("ThreadVote", handleGeoEvent);
+                        </code></pre>
+                    </section>
+                </section>
+                
+                <section>
+                    <section>
+                        <h2>Status Check</h2>
+                    </section>
+                    
+                    <section>
+                        <h2>Problems Solved</h2>
+                        <ul>
+                            <li><strike>Infinite spinners</strike></li>
+                            <li><strike>Manual stream parsing</strike></li>
+                            <li class="fragment">Manual connection control <em>(sort of)</em></li>
+                            <li class="fragment">Manual event distribution</li>
+                            <li class="fragment">Detecting network support</li>
+                            <li class="fragment">Implementing WebSockets backend (averted)</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2>Web Dev's Dream?</h2>
+                        <img src="eventsource/developer_beauty.jpg">
+                    </section>
+                    
+                    <section>
+                        <h2>Problems Standing</h2>
+                        <ul>
+                            <li class="fragment">Detecting browser support
+                                <p class="fragment">Polyfills + <code>if (window.EventSource)</code></p>
+                            </li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Gotcha: CORS on Webkit</h2>
+                        <p class="fragment">If on different origin: </p>
+                        <pre class="fragment"><code>
+try {
+    var ev = window.EventSource &amp;&amp; new EventSource(url);
+catch (err) {  // different origin will trigger an error immediately
+    // fallback
+};
+                        </code></pre>
+                        <p class="fragment">
+                            <em>Or a static check that's built into <a href="http://modernizr.com/docs/#features-html5">Modernizr?</a></em>
+                        </p>
+                        <pre class="fragment"><code>if (Modernizr.EventSourceWithCORS)</code></pre>
+                    </section>
+                </section>
+                
+                <section>
+                    <section>
+                        <h2>Toolchain Summary</h2>
+                    </section>
+                    
+                    <section>
+                        <h2>Reasons for using WebSockets over EventSource</h2>
+                        <ul>
+                            <li class="fragment">Low-latency client-to-server messages</li>
+                            <li class="fragment">Somewhat better CORS support</li>
+                            <li class="fragment">Low level operations (binary messages etc.)</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Reasons for using EventSource over WebSockets</h2>
+                        <ul>
+                            <li class="fragment">Structured data and events</li>
+                            <li class="fragment">No extra backend requirements</li>
+                            <li class="fragment">No proxy/firewall problems, just HTTP</li>
+                            <li class="fragment">Fallback is a JS-only polyfill</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Conclusion?</h2>
+                        <p>Use EventSource (or server-sent events) more, especially if you just need to update the client!</p>
+                    </section>
+                </section>
+                
+                <section>
+                    <h2>Credits</h2>
+                    <p>Lego Star Wars Images by <a href="http://www.flickr.com/photos/balakov/sets/72157594352657197/">Mike Stimpson</a></p>
+                </section>
+                
+                <section>
+                    <h2>References</h2>
+                    <ul>
+                        <li><a href="http://dev.w3.org/html5/eventsource/">Server-sent Events W3C Draft</a></li>
+                        <li><a href="http://html5doctor.com/server-sent-events/">HTML5 Doctor: Server-sent Events</a></li>
+                        <li><a href="https://github.com/Yaffle/EventSource/">EventSource Polyfill</a></li>
+                    </ul>
+                </section>
+                
+                <section>
+                    <h2>Thanks!</h2>
+                    <img src="eventsource/tranquility.jpg">
+                    <p>Questions?</p>
+                </section>
+            </div>
+
+        </div>
+
+        <script src="js/reveal.min.js"></script>
+        <script src="lib/js/head.min.js"></script>
+        
+        <script>
+            Reveal.initialize({
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+
+                transition: 'concave', // default/cube/page/concave/zoom/linear/fade/none
+
+                // Optional libraries used to extend on reveal.js
+                dependencies: [
+                    { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+                    { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+                ]
+            });
+        </script>
+        <script>
+            Reveal.addEventListener('slidechanged', function (data) {
+                var selector = 'iframe[data-src]';
+                var timer, currentFrame;
+
+                var ontimeout = function () {
+                    var fallback = document.createElement('img');
+                    fallback.src = this.getAttribute('data-fallback');
+                    this.parentNode.replaceChild(fallback, this);
+                };
+
+                var frames = document.querySelectorAll(selector);
+                for (var i = 0; i < frames.length; i++)
+                    frames[i].setAttribute('src', 'about:blank');
+
+                var currentFrames = data.currentSlide.querySelectorAll(selector);
+                for (var i = 0; i < currentFrames.length; i++) {
+                    currentFrame = currentFrames[i];
+                    timer = setTimeout(ontimeout.bind(currentFrame), 12000);
+                    currentFrame.onload = clearTimeout.bind(window, timer);
+                    currentFrame.setAttribute('src', currentFrame.getAttribute('data-src'));
+                }
+            });
+        </script>
+    </body>
+</html>
