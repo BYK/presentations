@@ -183,7 +183,6 @@ onProgress: function () {
     /* ...try parsing responseText... */
     
     /* ...trigger events etc... */
-    }
 
     if (advance > 0)
         this.marker += (advance - 1);  // -1 since no new line at the end
@@ -267,20 +266,26 @@ onError: function () {
                     </section>
                     
                     <section>
-                        <h2>Detecting handshake failure</h2>
+                        <h2>Detect handshake failure</h2>
                         <pre><code>
+onOpen: function () {
+    this.handshakeSuccess = true;
+},
+onError: function () {
+    if (!this.handshakeSuccess) {
+        this.trigger('fail');
+        return;
+    }  /* ... */
+},
 initialize: function (threadId, handlers, context) {
     /* ... */
     if (ws) {  // if browser supports WebSockets
         pipe.on('fail', function () {
             this._wsSupported = false;
-            // remove all event listeners from the old pipe
-            pipe.off();
-            this.initialize.apply(this, this._initArgs);
+            /* reinit */
         }, this);
     }
-
-    pipe.run();
+    /* ... */
 }
                         </code></pre>
                         <p class="fragment"><em>Bleh...</em></p>
@@ -359,7 +364,7 @@ var handleGeoEvent = function(e) {
     var geo = data.message_body.geo;
 
     if (geo) { // geo might be undefined
-      addGeoPoint(geo.latitude, geo.longitude);
+        addGeoPoint(geo.latitude, geo.longitude);
     }
 };
 
