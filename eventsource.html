@@ -360,12 +360,8 @@ initialize: function (threadId, handlers, context) {
                         <h2>How to use?</h2>
                         <pre><code>
 var handleGeoEvent = function(e) {
-    var data = JSON.parse(e.data);
-    var geo = data.message_body.geo;
-
-    if (geo) { // geo might be undefined
-        addGeoPoint(geo.latitude, geo.longitude);
-    }
+    var geo = JSON.parse(e.data).message_body.geo;
+    addGeoPoint(geo.latitude, geo.longitude);
 };
 
 var ev = new EventSource("http://realtime.services.disqus.com/api/raw/orbital");
