@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+
+        <title>EventSource ile Standartlaştırılmış Gerçek Zamanlı Olaylar</title>
+
+        <meta name="description" content="Explains a new way for real-time server updates: SSE aka EventSource">
+        <meta name="author" content="Burak Yigit Kaya">
+
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <link rel="stylesheet" href="css/reveal.min.css">
+        <link rel="stylesheet" href="css/theme/disqus.css" id="theme">
+        <link rel="stylesheet" type="text/css" href="fonts.css">
+
+        <!-- For syntax highlighting -->
+        <link rel="stylesheet" href="lib/css/zenburn.css">
+
+        <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+        <script>
+            document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+        </script>
+
+        <!--[if lt IE 9]>
+        <script src="lib/js/html5shiv.js"></script>
+        <![endif]-->
+    </head>
+
+    <body>
+
+        <div class="reveal">
+
+            <!-- Any section element inside of this container is displayed as a slide -->
+            <div class="slides">
+
+                <section>
+                    <h1>EventSource</h1>
+                    <h3>Standartlaştırılmış Gerçek Zamanlı Olaylar</h3>
+                    <p>
+                        <small><a href="http://read.byk.im">Burak Yigit Kaya</a> / <a href="http://twitter.com/madBYK">@madBYK</a></small>
+                    </p>
+                </section>
+
+                <section>
+                    <img src="eventsource/disqus-tri.png">
+                    <h2>sunum ilginizi çekiyorsa</h2>
+                    <p><small>
+                    adam arıyoruz! - <a href="http://disqus.com/jobs">disqus.com/jobs</a>
+                    </small></p>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>DISQUS Nedir?</h2>
+                    </section>
+                    <section>
+                        <iframe data-src="http://disqus.com" data-fallback="eventsource/whats-disqus.png"></iframe>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Neden Gerçek Zaman?</h2>
+                        <ul>
+                            <li class="fragment">Anı yakalama ve paylaşma</li>
+                            <li class="fragment">Kullanıcıları teşvik ediyor</li>
+                            <li class="fragment">Havalı görünüyor &#x1F60E;</li>
+                            <li class="fragment">Yeni ürünlere önayak oluyor</li>
+                        </ul>
+                    </section>
+                    <section>
+                        <iframe data-src="http://map.labs.disqus.com" data-fallback="eventsource/orbital.png"></iframe>
+                        <a href="http://map.labs.disqus.com">map.labs.disqus.com</a>
+                    </section>
+                </section>
+
+                <section>
+                    <h2>Nasıl başladı?</h2>
+                    <pre><code>
+var interval = setInterval(function () {
+    var cache = DISQUS.cache.realtime,
+        url   = DISQUS.jsonData.urls.realtime;
+
+    url += '?timestamp=' + cache.last_checked +
+        '&amp;thread_id=' + DISQUS.jsonData.thread.id +
+        '&amp;f=' + DISQUS.jsonData.forum.url + '&amp;';
+
+    if (!cache.ongoing_request &amp;&amp; DISQUS.jsonData.realtime_enabled) {
+        if (cache.prev_script &amp;&amp; cache.prev_script.parentNode) {
+            DISQUS.nodes.remove(cache.prev_script);
+        }
+
+        cache.ongoing_request = true;
+        cache.prev_script = DISQUS.request.get(url, undefined, true);
+    }
+}, DISQUS.jsonData.context.realtime_speed);
+                    </code></pre>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Çalışıyorsa elleme?</h2>
+                        <p class="fragment">Peki neden "elledik"?</p>
+                        <p class="fragment">Çünkü aslında çalışmıyordu.</p>
+                    </section>
+                    <section data-state="alert">
+                        <h2>Çalışmayan neydi?</h2>
+                        <ul>
+                            <li class="fragment">Ölçeklenebilir değil<span class="fragment">, memcache tabanlı olmasına rağmen</span></li>
+                            <li class="fragment">Güncelleme sıklığından dolayı aslında "gerçek" zamanlı değil</li>
+                            <li class="fragment">Sayfada doğrudan kod çalıştırıyor, esnek değil</li>
+                        </ul>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h1>Peki o zaman sırada ne var?</h1>
+                    </section>
+                    <section>
+                            <h3>Node.JS + Socket.IO!</h3>
+                            <small><em>Flash desteğiyle</em></small>
+                    </section>
+                    <section data-state="soothe">
+                        <img src="eventsource/trollface.gif">
+                    </section>
+                    <section>
+                        <h2>Nginx PushStream<br>+<br>Streaming XHR</h2>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Streaming XHR?</h2>
+                        <pre><code>
+var interval = setInterval(function () {
+    // Do nothing if the server didn't push anything new.
+    if (xhr.responseText &amp;&amp; len !== xhr.responseText.length) {
+        /* ...try parsing responseText... */
+        
+        /* ...trigger events etc... */
+        
+        len = xhr.responseText.length;
+    }
+
+    if (xhr.readyState == 4) {  // detect close
+        xhr.abort();
+        clearInterval(interval);
+        return void self.poll();
+    }
+}, frequency);
+                        </code></pre>
+                    </section>
+                    <section data-state="blackout">
+                        <h2>Hala zamanlayıcı ve periyodik kontrole dayanıyor :(</h2>
+                    </section>
+                </section>
+
+                <section>
+                    <section data-state="soothe">
+                        <h2>Daha iyi streaming XHR!</h2>
+                        <p><em>HTML5 ve XHR2 sağolsun</em></p>
+                        <img src="eventsource/html5_present.jpg">
+                    </section>
+                    
+                    <section>
+                        <h2>onProgress olayını kullanıyoruz</h2>
+                        <pre><code>
+onProgress: function () {
+    var resp = this.xhr.responseText;
+    var advance = 0;
+    var rows;
+
+    // Sanity check
+    if (!resp || this.marker >= resp.length)
+        return;
+
+    /* ...try parsing responseText... */
+    
+    /* ...trigger events etc... */
+
+    if (advance > 0)
+        this.marker += (advance - 1);  // -1 since no new line at the end
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section data-state="blackout">
+                        <h2>Hala yeterince iyi değil</h2>
+                        <ul>
+                            <li class="fragment">Satır satır işlemek (parse) sıkıntılı</li>
+                            <li class="fragment">Sürekli dönen "yükleniyor" işareti</li>
+                            <li class="fragment">Periyodik olarak bağlantıyı sıfırlama ihtiyacı (bellek)</li>
+                        </ul>
+                    </section>
+                </section>
+                
+                <section>
+                    <section>
+                        <h2>WebSocket:<br>Şık ama tehlikeli bir silah</h2>
+                        <img src="eventsource/websocket_an_elegant_weapon.png">
+                    </section>
+
+                    <section>
+                        <h2>İlk WebSocket Kodu</h2>
+                        <pre><code>
+run: function () {
+    var socket = this.socket = new WebSocket(this.url);
+
+    socket.onmessage = this.onmessage.bind(this);
+    socket.onclose = this.close.bind(close);
+},
+
+onmessage: function (evt) {
+    var msg = JSON.parse(evt.data);
+    this.handleMessage(msg);
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Tarayıcı desteğini anlama</h2>
+                        <pre><code>!!window.WebSocket</code></pre>
+                        <div class="fragment">
+                            <h3>Keşke bu kadar kolay olsaydı...</h3>
+                            <pre><code>
+// Selam ben Safari 5.1, en zeki ben olduğum için eski WebSocket
+// taslaklarından birini tarayıcı ön eki olmadan herkese açtım!
+window.WebSocket &amp;&amp; WebSocket.CLOSING === 2,
+                            </code></pre>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2>Bağlantı koparsa?</h2>
+                        <pre><code>
+onClose: function (evt) {
+    if (!evt.wasClean)
+        return;  // means error, which is handled by onError
+
+    DISQUS.log('RT: [Socket] Connection closed. Restarting...');
+    this.trigger('close', this);
+    this.run();
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Sunucu hatasından dolayı bağlantı koparsa?</h2>
+                        <pre><code>
+onError: function () {
+    this.trigger('error');
+
+    if (this.interval &lt;= BACKOFF_LIMIT)
+        this.interval *= EXP_BASE;
+
+    DISQUS.logError('RT: Connection error, backing off...');
+    _.delay(this._boundRun, this.interval * 1000);
+}
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>El sıkışma hatası</h2>
+                        <pre><code>
+onOpen: function () {
+    this.handshakeSuccess = true;
+},
+onError: function () {
+    if (!this.handshakeSuccess) {
+        this.trigger('fail');
+        return;
+    }  /* ... */
+},
+initialize: function (threadId, handlers, context) {
+    /* ... */
+    if (ws) {  // if browser supports WebSockets
+        pipe.on('fail', function () {
+            this._wsSupported = false;
+            /* reinit */
+        }, this);
+    }
+    /* ... */
+}
+                        </code></pre>
+                        <p class="fragment"><em>Offf...</em></p>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>Durum Kontrolü</h2>
+                    </section>
+                    
+                    <section>
+                        <h2>Çözülen Sorunlar</h2>
+                        <ul>
+                            <li class="fragment">Sürekli dönen "yükleniyor" simgesi</li>
+                            <li class="fragment">Veriyi manuel işleme</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2>Devam Eden Sorunlar</h2>
+                        <ul>
+                            <li class="fragment">Manuel bağlantı yönetimi</li>
+                            <li class="fragment">Manuel olay dağıtımı</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2><em>Eklenen</em> Sorunlar</h2>
+                        <ul>
+                            <li class="fragment">Tarayıcı desteği kontrolü</li>
+                            <li class="fragment">Ağ desteği kontrolü</li>
+                            <li class="fragment">WebSockets destekli sunucu bulmak</li>
+                        </ul>
+                    </section>
+                    
+                    <section data-state="alert">
+                        <h2>Socket'in İntikamı</h2>
+                        <img src="eventsource/darthsocket.jpg">
+                    </section>
+                    
+                    <section data-state="blackout">
+                        <h2>Bir kahramana ihtiyacımız var...</h2>
+                    </section>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>EventSource: Yeni Bir Umut</h2>
+                        <img src="eventsource/new_hope.png">
+                        <!-- <p><q>Those were not the droids you are looking for.</q></p> -->
+                    </section>
+                    
+                    <section>
+                        <h2>Bakalım elimizde ne var?</h2>
+                        <ul>
+                            <li class="fragment">Basit bir veri yapısına dayalı olay sistemi</li>
+                            <li class="fragment">Yarı-otomatik bağlantı kontrolü</li>
+                            <li class="fragment">Sadece yeni bir veri tipi kullanan bildiğimiz HTTP</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Örnek Veri</h2>
+                        <pre><code>
+<strong>id:</strong> 0ab2a49455664f0c9bca9a057b35af8a
+<strong>event:</strong> Vote
+<strong>data:</strong> { /* Some JSON data in a single line */ }
+                        </code></pre>
+                    </section>
+                    
+                    <section>
+                        <h2>Nasıl kullanıyoruz?</h2>
+                        <pre><code>
+var handleGeoEvent = function(e) {
+    var geo = JSON.parse(e.data).message_body.geo;
+    addGeoPoint(geo.latitude, geo.longitude);
+};
+
+var ev = new EventSource("http://realtime.services.disqus.com/api/raw/orbital");
+ev.addEventListener("Post", handleGeoEvent);
+ev.addEventListener("Vote", handleGeoEvent);
+ev.addEventListener("ThreadVote", handleGeoEvent);
+                        </code></pre>
+                    </section>
+                </section>
+                
+                <section>
+                    <section>
+                        <h2>Durum Kontrolü</h2>
+                    </section>
+                    
+                    <section>
+                        <h2>Çözülen Sorunlar</h2>
+                        <ul>
+                            <li class="fragment">Sürekli dönen "yükleniyor" simgesi<small>*</small></li>
+                            <li class="fragment">Veriyi manuel işleme<small>*</small></li>
+                            <li class="fragment">Manuel bağlantı yönetimi <em>(bir nebze)</em></li>
+                            <li class="fragment">Manuel olay dağıtımı</li>
+                            <li class="fragment">Ağ desteği kontrolü</li>
+                            <li class="fragment">WebSockets destekli sunucu bulmak (kurtulduk)</li>
+                        </ul>
+                        <p class="fragment"><small>* WebSockets'in zaten çözdüğü sorunlar</small></p>
+                    </section>
+
+                    <section>
+                        <h2>Geliştiricilerin Rüyası?</h2>
+                        <img src="eventsource/developer_beauty.jpg">
+                    </section>
+                    
+                    <section>
+                        <h2>Devam Eden Sorunlar</h2>
+                        <ul>
+                            <li class="fragment">Tarayıcı desteği kontrolü
+                                <p class="fragment">Dolgular + <code>if (window.EventSource)</code></p>
+                            </li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Püf Nokatası: Webkit ve CORS</h2>
+                        <p class="fragment">Farklı alan adıysa: </p>
+                        <pre class="fragment"><code>
+try {
+    var ev = window.EventSource &amp;&amp; new EventSource(url);
+catch (err) {  // different origin will trigger an error immediately
+    // fallback
+};
+                        </code></pre>
+                        <p class="fragment">
+                            <em>Ya da <a href="http://modernizr.com/docs/#features-html5">Modernizr</a>'a ekli statik bir kontrol</em>
+                        </p>
+                        <pre class="fragment"><code>if (Modernizr.EventSourceWithCORS)</code></pre>
+                    </section>
+                </section>
+                
+                <section>
+                    <section>
+                        <h2>Araçların Özeti</h2>
+                    </section>
+                    
+                    <section>
+                        <h2>EventSource yerine WebSockets kullanmak için sebepler</h2>
+                        <ul>
+                            <li class="fragment">İstemci-sunucu arası düşük gecikmeli iletişim</li>
+                            <li class="fragment">Nispeten daha iyi CORS desteği</li>
+                            <li class="fragment">İkilik veri iletimi gibi alt seviye iletişim</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>WebSockets yerine EventSource kullanmak için sebepler</h2>
+                        <ul>
+                            <li class="fragment">Belirli bir veri ve olay yapısı</li>
+                            <li class="fragment">Sunucuda değişikliğe gerek yok</li>
+                            <li class="fragment">Proxy/firewall derdi yok, normal HTTP</li>
+                            <li class="fragment">Destek yoksa salt JS ile dolgu</li>
+                        </ul>
+                    </section>
+                    
+                    <section>
+                        <h2>Sonuç?</h2>
+                        <p>Nginx PushStream ve EventSource kullanın, özellikle de sadece istemciyi güncel tutmak istiyosanız!</p>
+                        <p class="fragment"><small>Pişşt... Nginx PushStream ile ilgili daha çok bilgi için: <a href="http://pyvideo.org/video/1700/making-disqus-realtime-0">Making DISQUS Realtime</a></small></p>
+                    </section>
+                </section>
+                
+                <section>
+                    <h2>Emeği Geçenler</h2>
+                    <p><a href="http://www.flickr.com/photos/balakov/sets/72157594352657197/">Mike Stimpson</a> - Lego Star Wars Fotoğrafları</p>
+                    <p>Destek ve gözden geçirme:
+                        <ul>
+                            <li><a href="http://twitter.com/bentlegen">Ben Vinegar</a></li>
+                            <li><a href="http://twitter.com/NorthIsUp">Adam Hitchcock</a></li>
+                            <li><a href="http://twitter.com/berkerpeksag">Berker Peksağ</a></li>
+                            <li><a href="http://twitter.com/Syln">Seylan Çınar</a></li>
+                        </ul>
+                    </p>
+                </section>
+                
+                <section>
+                    <h2>Kaynaklar</h2>
+                    <ul>
+                        <li><a href="http://dev.w3.org/html5/eventsource/">Server-sent Events W3C Draft</a></li>
+                        <li><a href="http://html5doctor.com/server-sent-events/">HTML5 Doctor: Server-sent Events</a></li>
+                        <li><a href="https://github.com/Yaffle/EventSource/">EventSource Polyfill</a></li>
+                        <li><a href="https://speakerdeck.com/pyconslides/scaling-realtime-at-disqus-by-adam-hitchcock">Making DISQUS Realtime by Adam Hitchcock</a></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <img src="eventsource/disqus-tri.png">
+                    <h2>Hala adam arıyoruz!</h2>
+                    <p><small>
+                    bizimle çalışın! - <a href="http://disqus.com/jobs">disqus.com/jobs</a>
+                    </small></p>
+                </section>
+                
+                <section>
+                    <h2>Teşekkürler!</h2>
+                    <img src="eventsource/tranquility.jpg">
+                    <p>Soruları alalım :)</p>
+                </section>
+            </div>
+
+        </div>
+
+        <script src="js/reveal.min.js"></script>
+        <script src="lib/js/head.min.js"></script>
+        
+        <script>
+            Reveal.initialize({
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+
+                transition: 'concave', // default/cube/page/concave/zoom/linear/fade/none
+
+                // Optional libraries used to extend on reveal.js
+                dependencies: [
+                    { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+                    { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+                ]
+            });
+        </script>
+        <script>
+            Reveal.addEventListener('slidechanged', function (data) {
+                var selector = 'iframe[data-src]';
+                var timer, currentFrame;
+
+                var ontimeout = function () {
+                    var fallback = document.createElement('img');
+                    fallback.src = this.getAttribute('data-fallback');
+                    this.parentNode.replaceChild(fallback, this);
+                };
+
+                var frames = document.querySelectorAll(selector);
+                for (var i = 0; i < frames.length; i++)
+                    frames[i].setAttribute('src', 'about:blank');
+
+                var currentFrames = data.currentSlide.querySelectorAll(selector);
+                for (var i = 0; i < currentFrames.length; i++) {
+                    currentFrame = currentFrames[i];
+                    timer = setTimeout(ontimeout.bind(currentFrame), 6000);
+                    currentFrame.onload = clearTimeout.bind(window, timer);
+                    currentFrame.setAttribute('src', currentFrame.getAttribute('data-src'));
+                }
+            });
+        </script>
+    </body>
+</html>
