@@ -56,7 +56,21 @@ body {
 .reveal code {
     font-family: "Source Code Pro", monospace;
     max-height: 500px; }
-  
+
+.reveal aside {
+    float: right;
+    clear: right; }
+
+.reveal aside ~ * {
+    float: left;
+    clear: left;
+    text-align: left;
+    width: auto;
+    overflow: hidden; }
+
+.reveal .push-down {
+    margin-top: 10%; }
+
 ::selection {
   color: white;
   background: #ff5e99;
