@@ -210,7 +210,7 @@ msgstr ""
 <section>
     <h3>Outsourcing translatables</h3>
     <pre><code>
-$ tx push -s --skip -r disqusjs
+$ tx push --source --skip --resource=disqusjs
     </code></pre>
     <p class="fragment">Yup, simple as that.</p>
 </section>
@@ -219,7 +219,7 @@ $ tx push -s --skip -r disqusjs
     <h4>Things to be careful about</h4>
     <p>Do not overwrite all translations with each revision!</p>
     <pre class="fragment"><code>
-$ tx pull --skip -s -f -r disqusjs -l "0"
+$ tx pull --source -f --resource disqusjs -l "0"
 $ jsxgettext all.js -o all.pot --join-existing
     </code></pre>
     <h5 align="left" class="fragment">Keep in mind:</h5>
@@ -249,7 +249,7 @@ $ curl -s https://www.transifex.com/api/2/languages -o locale/map.json
     <div class="fragment">
         <h4 align="left">Actual translations:</h4>
         <pre><code>
-$ tx pull --skip --mode reviewed -a -r disqusjs
+$ tx pull --skip --mode reviewed --all -r disqusjs
         </code></pre>
     </div>
 </section>
