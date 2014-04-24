@@ -154,22 +154,22 @@ var gettext = function (str) {
 };
         </code></pre>
         <pre class="fragment"><code>
-alert(gettext("Hello Kod.io!"));  // Hello Kod.io!
+alert(gettext("Hello World!"));  // Hello World!
         </code></pre>
         <pre class="fragment"><code>
-translations["Hello Kod.io!"] = "Merhaba Kod.io!";
+translations["Hello World!"] = "Merhaba Dünya!";
 
-alert(gettext("Hello Kod.io!"));  // Merhaba Kod.io!
+alert(gettext("Hello World!"));  // Merhaba Dünya!
         </code></pre>
     </section>
     <section>
         <h4>With variables:</h4>
         <pre class="fragment"><code>
-translations["Hello %(conference)s!"] = "Merhaba %(conference)s!";
+translations["Hello %(name)s!"] = "Merhaba %(name)s!";
 
-alert(gettext("Hello %(conference)s!")
-      .replace('%(conference)s', 'Kod.io')
-);  // Merhaba Kod.io!
+alert(gettext("Hello %(name)s!")
+      .replace('%(name)s', 'Burak')
+);  // Merhaba Burak!
         </code></pre>
     </section>
 </section>
