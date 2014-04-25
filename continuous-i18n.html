@@ -129,7 +129,6 @@ $ git diff --shortstat "@{2 months ago}"
         <ul>
             <li class="fragment">Solves the storage problem: where & how</li>
             <li class="fragment">Solves the UI problem</li>
-            <li class="fragment">Makes automation a requirement</li>
             <li class="fragment">Abstracts out language-specific issues</li>
         </ul>
     </section>
@@ -310,7 +309,30 @@ $ curl -s -X PUT -F latest="./translations-latest.tar.gz" "http://builds.myserve
     </section>
     <section>
         <h4>Create CSS for RTL</h4>
+        <p>Avoid this: <img src="continuous-i18n/rtl-not-enough.png" alt="RTL page without CSS transformation"></p>
         <p class="fragment">Chef's recommendation: <a href="https://github.com/ded/R2">R2</a></p>
+    </section>
+    <section>
+        <h4>CSS for RTL</h4>
+        <pre><code>
+/* Normal (Left-to-Right) */
+#content {
+  float: left;
+  margin-right: 2px;
+  padding: 1px 2px 3px 4px;
+  left: 5px;
+  text-align: right;
+}
+
+/* RTL (Right-to-Left) */
+#content {
+  float: right;
+  margin-left: 2px;
+  padding: 1px 4px 3px 2px;
+  right: 5px;
+  text-align: left;
+}
+        </code></pre>
     </section>
 </section>
 
