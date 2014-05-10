@@ -19,7 +19,6 @@
 
     <link rel="stylesheet" href="css/reveal.min.css">
     <link rel="stylesheet" href="css/theme/disqus.css" id="theme">
-    <link rel="stylesheet" type="text/css" href="fonts.css">
 
     <!-- For syntax highlighting -->
     <link rel="stylesheet" href="lib/css/zenburn.css">
@@ -403,7 +402,7 @@ $ curl -s -X PUT -F latest="./translations-latest.tar.gz" "http://builds.myserve
             } },
             { src: 'plugin/zoom-js/zoom.js', async: true, condition: function () {
                 return !!document.body.classList;
-            } },
+            } }
         ]
     });
 </script>
