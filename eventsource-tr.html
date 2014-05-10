@@ -16,7 +16,6 @@
 
         <link rel="stylesheet" href="css/reveal.min.css">
         <link rel="stylesheet" href="css/theme/disqus.css" id="theme">
-        <link rel="stylesheet" type="text/css" href="fonts.css">
 
         <!-- For syntax highlighting -->
         <link rel="stylesheet" href="lib/css/zenburn.css">
@@ -449,14 +448,13 @@ catch (err) {  // different origin will trigger an error immediately
                 <section>
                     <h2>Emeği Geçenler</h2>
                     <p><a href="http://www.flickr.com/photos/balakov/sets/72157594352657197/">Mike Stimpson</a> - Lego Star Wars Fotoğrafları</p>
-                    <p>Destek ve gözden geçirme:
-                        <ul>
-                            <li><a href="http://twitter.com/bentlegen">Ben Vinegar</a></li>
-                            <li><a href="http://twitter.com/NorthIsUp">Adam Hitchcock</a></li>
-                            <li><a href="http://twitter.com/berkerpeksag">Berker Peksağ</a></li>
-                            <li><a href="http://twitter.com/Syln">Seylan Çınar</a></li>
-                        </ul>
-                    </p>
+                    <h4>Destek ve gözden geçirme:</h4>
+                    <ul>
+                        <li><a href="http://twitter.com/bentlegen">Ben Vinegar</a></li>
+                        <li><a href="http://twitter.com/NorthIsUp">Adam Hitchcock</a></li>
+                        <li><a href="http://twitter.com/berkerpeksag">Berker Peksağ</a></li>
+                        <li><a href="http://twitter.com/Syln">Seylan Çınar</a></li>
+                    </ul>
                 </section>
                 
                 <section>
@@ -503,32 +501,8 @@ catch (err) {  // different origin will trigger an error immediately
                     { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
                     { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
                     { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
-                    { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+                    { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } }
                 ]
-            });
-        </script>
-        <script>
-            Reveal.addEventListener('slidechanged', function (data) {
-                var selector = 'iframe[data-src]';
-                var timer, currentFrame;
-
-                var ontimeout = function () {
-                    var fallback = document.createElement('img');
-                    fallback.src = this.getAttribute('data-fallback');
-                    this.parentNode.replaceChild(fallback, this);
-                };
-
-                var frames = document.querySelectorAll(selector);
-                for (var i = 0; i < frames.length; i++)
-                    frames[i].setAttribute('src', 'about:blank');
-
-                var currentFrames = data.currentSlide.querySelectorAll(selector);
-                for (var i = 0; i < currentFrames.length; i++) {
-                    currentFrame = currentFrames[i];
-                    timer = setTimeout(ontimeout.bind(currentFrame), 6000);
-                    currentFrame.onload = clearTimeout.bind(window, timer);
-                    currentFrame.setAttribute('src', currentFrame.getAttribute('data-src'));
-                }
             });
         </script>
     </body>
