@@ -69,7 +69,26 @@
 
                 <section>
                     <h2>How did it start?</h2>
-                    <pre><code>
+                    <p class="fragment">Periodical requests to the server</p>
+                </section>
+
+                <section>
+                    <section>
+                        <h2>If ain' broken, don't fix it?</h2>
+                        <p class="fragment">So why did we "fix" it?</p>
+                        <p class="fragment">Coz it was broken.</p>
+                    </section>
+                    <section data-state="alert">
+                        <h2>What was broken?</h2>
+                        <ul>
+                            <li class="fragment">Not scalable, although based on memcache</li>
+                            <li class="fragment">Not really realtime due to limitations on frequency</li>
+                            <li class="fragment">Running script directly, hard to play with</li>
+                        </ul>
+                    </section>
+                    <section>
+                        <h2>Show me some code</h2>
+                        <pre><code>
 var interval = setInterval(function () {
     var cache = DISQUS.cache.realtime,
         url   = DISQUS.jsonData.urls.realtime;
@@ -88,21 +107,6 @@ var interval = setInterval(function () {
     }
 }, DISQUS.jsonData.context.realtime_speed);
                     </code></pre>
-                </section>
-
-                <section>
-                    <section>
-                        <h2>If ain' broken, don't fix it?</h2>
-                        <p class="fragment">So why did we "fix" it?</p>
-                        <p class="fragment">Coz it was broken.</p>
-                    </section>
-                    <section data-state="alert">
-                        <h2>What was broken?</h2>
-                        <ul>
-                            <li class="fragment">Not scalable<span class="fragment">, although based on memcache</span></li>
-                            <li class="fragment">Not really realtime due to limitations on frequency</li>
-                            <li class="fragment">Running script directly, hard to play with</li>
-                        </ul>
                     </section>
                 </section>
 
